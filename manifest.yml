@@ -1,0 +1,11 @@
+---
+name: RStudio Server
+category: Interactive Apps
+subcategory: Servers
+role: batch_connect
+description: |
+  This app will launch [RStudio Server] an IDE for [R] on [Tufts High Performance Compute (HPC) cluster].
+
+  [RStudio Server]: https://www.rstudio.com/products/rstudio-server/
+  [R]: https://www.r-project.org/
+  [Tufts High Performance Compute (HPC) cluster]: https://it.tufts.edu/researchtechnology.tufts.edu
