@@ -1,0 +1,4 @@
+R 4.0.0 - Only needs to care about OS constraint + reservation.
+R < 4.0.0 - Only needs to care about OS constraint as reservations are all
+RHEL 7 nodes anyway.
+

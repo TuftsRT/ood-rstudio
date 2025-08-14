@@ -2,7 +2,9 @@
 batch_connect:
   template: "basic"
   set_host: "host=$(hostname -A | awk '{print $1}')"
-
+  conn_params:
+    - csrf_token
+    
 script:
   native:
     - "--time=<%= bc_num_hours %>:00:00"

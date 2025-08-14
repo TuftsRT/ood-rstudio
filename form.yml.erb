@@ -8,42 +8,9 @@ form:
   - version
 
 attributes:
-  num_cores:
-    widget: "select"
-    label: "Number of CPU Cores"
-    options:
-      - ["2", "2"]
-      - ["4", "4"]
-      - ["6", "6"]
-      - ["8", "8"]
-      - ["12", "12"]
-      - ["16", "16"]
-      - ["24", "24"]
-    help: "Select the number of CPU cores for your job."
-
-  num_memory:
-    widget: "number_field"
-    label: "Amount of Memory (GB)"
-    help: "Enter the memory amount in GB (e.g., `12` for 12GB or `100` for 100GB)."
-    required: true
-    pattern: "^[0-9]{1,4}$"
-    value: 4
-    min: 1
-    max: 1400
-
-  partition:
-    widget: "select"
-    label: "Partition"
-    help: |
-      Selecting a partition is optional.  
-      Avoid choosing lab-specific partitions unless you are a member of that lab.
-    value: "batch"
-    options:
-      - ["batch", "Batch (default)"]
-      - ["largemem", "Large Memory"]
-      - ["preempt", "Preempt (low priority)"]
-      - ["patralab", "Patra Lab"]
-      - ["llab", "L Lab"]
+<%= File.read("/etc/ood/config/apps/dashboard/batch_connect/partials/cpu_partition.yml").indent(2) %>
+<%= File.read("/etc/ood/config/apps/dashboard/batch_connect/partials/num_cores_generic.yml").indent(2) %>
+<%= File.read("/etc/ood/config/apps/dashboard/batch_connect/partials/num_memory_generic.yml").indent(2) %>
 
   version:
     widget: "select"
