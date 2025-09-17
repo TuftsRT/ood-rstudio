@@ -6,6 +6,11 @@ batch_connect:
     - csrf_token
     
 script:
+  email_on_started: true
+  email_on_terminated: true
+  email: <%= ENV["USER"] %>@tufts.edu
+  job_name: "OnDemand/Rstudio"
+
   native:
     - "--time=<%= bc_num_hours %>:00:00"
     - "--mem=<%= num_memory %>G"
