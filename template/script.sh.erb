@@ -6,6 +6,7 @@ module purge
 # load R
 export R_MODULE="<%= context.version %>"
 module load ${R_MODULE}
+export SINGULARITY_BIND="/cluster/tufts${SINGULARITY_BIND:+,$SINGULARITY_BIND}"
 #
 # Start RStudio Server
 #
