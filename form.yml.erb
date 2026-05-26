@@ -1,21 +1,39 @@
 ---
+<%
+# Show only CPU partitions.
+@partition_filter = :cpu
+
+# Evaluate the shared resource_discovery.erb and capture its result. We use result(binding)
+# so methods/variables defined inside become available here. IMPORTANT:
+# cluster: "pax" must appear AFTER this block because result(binding)
+# resets the ERB output buffer, wiping anything output before it.
+_partial_path = '/var/www/ood/apps/sys/ood-resource-discovery/resource_discovery.erb'
+_gpu_result = ERB.new(File.read(_partial_path)).result(binding)
+%>
+
 cluster: "pax"
+
+bc_dynamic_js: true
+
 form:
+  - partition
   - bc_num_hours
   - num_cores
   - num_memory
-  - partition
   - version
+  - bc_email_on_started
 
 attributes:
-<%= File.read("/etc/ood/config/apps/dashboard/batch_connect/partials/cpu_partition.yml").indent(2) %>
-<%= File.read("/etc/ood/config/apps/dashboard/batch_connect/partials/num_cores_generic.yml").indent(2) %>
-<%= File.read("/etc/ood/config/apps/dashboard/batch_connect/partials/num_memory_generic.yml").indent(2) %>
+<%= generate_partition_field.indent(2) %>
+<%= generate_num_cores_field.indent(2) %>
+<%= generate_num_memory_field.indent(2) %>
+<%= generate_num_hours_field.indent(2) %>
 
   version:
     widget: "select"
-    label: "R Version"
-    help: "Select the desired R version."
+    label: "R version"
+    help: "Select the R version."
     options:
-      - ["4.5.2", "r/4.5.2"]     
-      - ["4.5.1", "r/4.5.1"]        
+      - ["4.6.0", "r/4.6.0"]
+      - ["4.5.2", "r/4.5.2"]
+      - ["4.5.1", "r/4.5.1"]

@@ -1,64 +1,110 @@
-# bc_rcc_rstudio_server
-RStudio Server app for Open OnDemand
+# RStudio Open OnDemand App
 
-Based on https://github.com/OSC/bc_osc_rstudio_server.
+This repository contains a Tufts Open OnDemand Batch Connect app for launching
+RStudio Server on the `pax` Slurm cluster.
 
-# Description
-This guide is a help to install the OOD RStudio Server app without requiring PRoot and/or Singularity. Prior to RStudio Server 1.3###, some hard-coded file paths caused a conflict when running multiple RStudio Server instances on the same server, as is the case when more than one OOD job launches to the same compute node. PRoot/Singularity fixed this issue by creating a unique TMP_DIR which was mounted into the container at /tmp. This fix successfully separated multiple instances running on the same server. To my knowledge, this was the primary benefit of using PRoot/Singularity. 
+The app uses a shared resource discovery partial to build resource controls from
+Slurm at form-render time. It is configured as a CPU-only app, so users only see
+CPU partitions and CPU-relevant resource widgets.
 
-Starting in RStudio Server 1.3###, the developers added environment variables to control the location of those hard-coded files. This means that (in our case at least) PRoot/Singularity is no longer required for the OOD RStudio Server App.
+## Features
 
-## Requirements
-- [Lmod](https://lmod.readthedocs.io/en/latest/) or any environment module system
-- [R](https://www.r-project.org/)
-- [RStudio Server](https://www.rstudio.com/products/rstudio/download-server/) 1.4 or higher (any of the recent date based releases will work)
+- Launch RStudio Server through Open OnDemand.
+- Let users choose an R module version from the form.
+- Discover user-accessible Slurm partitions dynamically.
+- Filter the partition list to CPU-only partitions.
+- Set dynamic maximum values for CPU cores, memory, and wall time.
+- Avoid caching resource-selection widgets so users make fresh choices for each job.
+- Load dynamic JavaScript from the app-local `form.js`.
 
-# Setup without PRoot/Singularity
-RStudio Server 1.4.XXXX and above enables RStudio OOD app to run without PRoot or Singularity. The developers added two flags for rserver that allow control of previously hard-coded file paths. However, you might still need PRoot or Singularity for some other reason depending on your HPC environment.
+## App Layout
 
-## Install RStudio Server
-The simplest way is to install using the RPM (we run CentOS 7) installer provided by RStudio.
-```
-wget https://download2.rstudio.org/server/centos7/x86_64/rstudio-server-rhel-2022.02.2-485-x86_64.rpm
-sudo yum install rstudio-server-rhel-2022.02.2-485-x86_64.rpm
-```
-However, many HPC sites like to control installation prefix. The provided RPM is not relocatable, but you can extract the files and move them manually.
-```
-mkdir ~/rstudio_files && cd ~/rstudio_files
-wget https://download2.rstudio.org/server/centos7/x86_64/rstudio-server-rhel-2022.02.2-485-x86_64.rpm
-rpm2cpio rstudio-server-rhel-2022.02.2-485-x86_64.rpm | cpio -idmv
-```
-This creates a directory `~/rstudio_files/usr/lib/rstudio-server` that contains the files. Move these files to your shared filesystem.
-```
-# Our shared filesystem for apps is /hpc/apps. Modify to suit your needs.
-cp -R ~/rstudio_files/usr/lib/rstudio-server/* /hpc/apps/rstudio-server/2022.02.2-485
-```
-Optionally add a modulefile to load env.
+- `manifest.yml`: Open OnDemand app metadata.
+- `form.yml.erb`: Batch Connect form definition and CPU partition filter.
+- `/var/www/ood/apps/sys/ood-resource-discovery/resource_discovery.erb`: shared Slurm discovery and generated resource widgets.
+- `form.js`: Dynamic browser behavior for partition, CPU, memory, and wall-time fields.
+- `submit.yml.erb`: Slurm submit arguments.
+- `template/before.sh.erb`: RStudio connection setup.
+- `template/script.sh.erb`: Runtime environment setup and RStudio Server launch.
+- `template/after.sh.erb`: Cleanup hook.
+- `template/bin/auth`: RStudio PAM auth helper.
 
-## RStudio Server OOD App
-To install the app:
-```
-cd /var/www/ood/apps/sys 
-git clone https://github.com/mcw-rcc/bc_rcc_rstudio_server.git
-cd bc_rcc_rstudio_server
-```
-Modify `manifest.yml`, `form.yml`, and `submit.yml.erb` for your site. The `template/script.sh.erb` should also be modified to suit your site. For instance, we use a modulefile to load RStudio Server, which is specific by site and should be supplied by your site.
-```
-rserver \
-  --www-port ${port} \
-  --auth-none 0 \
-  --auth-pam-helper-path "${RSTUDIO_AUTH}" \
-  --auth-encrypt-password 0 \
-  --rsession-path "${RSESSION_WRAPPER_FILE}" \
-  --server-data-dir "${TMPDIR}" \ 
-  --secure-cookie-key-file "${TMPDIR}/rstudio-server/secure-cookie-key"
-  --database-config-file "${DBCONF}"
-  --server-user $(whoami)
-```
-`--server-data-dir "${TMPDIR}"` redirects output of PIDs from /var/run/rstudio-rsession to ${TMPDIR}.
+## CPU Partition Filtering
 
-`--secure-cookie-key-file "${TMPDIR}/rstudio-server/secure-cookie-key"` redirects output of secure-cookie-key from /tmp/rstudio-server to $TMPDIR. Necessary to avoid conflict where multiple RStudio Server instances are running and generate same hard-coded file.
+Partition filtering is controlled in `form.yml.erb` before
+the shared site-level `resource_discovery.erb` is evaluated:
 
-`--database-config-file "${DBCONF}"` sets the path for a new database config requirement in 1.4.1717.
+```erb
+<%
+@partition_filter = :cpu
 
-Your $TMPDIR location needs to be unique for this to work. We use our queueing system to set a unique $TMPDIR per job. You can also use `export TMPDIR="$(mktemp -d)"` within `template/script.sh.erb`.
+_partial_path = '/var/www/ood/apps/sys/ood-resource-discovery/resource_discovery.erb'
+_gpu_result = ERB.new(File.read(_partial_path)).result(binding)
+%>
+```
+
+Available filters:
+
+- `:cpu`: show only CPU-only partitions.
+- `:gpu`: show only partitions that contain GPU nodes.
+- `:all`: show all user-accessible partitions.
+
+This RStudio app should use:
+
+```erb
+@partition_filter = :cpu
+```
+
+The generated helpers use `@partition_filter` by default, so the CPU-only form
+can render only the relevant widgets:
+
+```erb
+<%= generate_partition_field.indent(2) %>
+<%= generate_num_cores_field.indent(2) %>
+<%= generate_num_memory_field.indent(2) %>
+<%= generate_num_hours_field.indent(2) %>
+```
+
+Do not render `generate_gpu_type_field` or `generate_num_gpus_field` in this app
+unless you intentionally convert it into a GPU-capable RStudio app.
+
+## Resource Discovery
+
+The app uses Slurm commands at form-render time:
+
+- `sinfo -o "%P %l"` for user-accessible partitions and wall-time limits.
+- `scontrol show partition --oneliner` for partition-level CPU and memory caps.
+- `scontrol show node --oneliner` for node CPU count, memory, features, GRES, and
+  node state.
+
+For CPU-only partitions, the dynamic JavaScript treats the internal GPU type as
+`none` and updates CPU cores, memory, and wall time when the selected partition
+changes.
+
+## Deployment
+
+Install this directory as a Batch Connect app under the Open OnDemand app
+location for your site, then review these site-specific settings:
+
+- `cluster: "pax"` in `form.yml.erb`.
+- `@partition_filter = :cpu` in `form.yml.erb`.
+- Available R module options in `form.yml.erb`.
+- Slurm native arguments in `submit.yml.erb`.
+- RStudio launch options and bind paths in `template/script.sh.erb`.
+- Connection/auth behavior in `template/before.sh.erb` and `template/bin/auth`.
+
+## Development Checks
+
+Useful syntax checks:
+
+```bash
+erb -x -T '-' form.yml.erb | ruby -c
+erb -x -T '-' form.yml.erb | ruby -c
+node --check form.js
+```
+
+## Related App
+
+The same shared `resource_discovery.erb` and `form.js` pattern is also used by
+the Tufts Jupyter Open OnDemand app. Apps can select CPU-only, GPU-only, or mixed
+partition behavior by setting `@partition_filter` in their own `form.yml.erb`.
