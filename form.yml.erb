@@ -22,8 +22,17 @@ form:
   - num_memory
   - version
   - bc_email_on_started
+  - ta_qos
 
 attributes:
+  ta_qos:
+    widget: check_box
+    label: "Request priority start"
+    cacheable: false
+    help: "Limited to 1 running job at a time. (--qos=interactive)"
+    value: "normal"
+    checked_value: "interactive"
+    unchecked_value: "normal"
 <%= generate_partition_field.indent(2) %>
 <%= generate_num_cores_field.indent(2) %>
 <%= generate_num_memory_field.indent(2) %>

@@ -15,3 +15,6 @@ script:
     - "--nodes=1"
     - "--ntasks=<%= num_cores %>"
     - "--partition=<%= partition %>"
+    <%- if defined?(ta_qos) && ta_qos == "interactive" -%>
+    - "--qos=<%= ta_qos %>"
+    <%- end -%>

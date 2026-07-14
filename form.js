@@ -29,7 +29,7 @@ function updateGpuAvailabilityWarning() {
   var existingWarning = document.getElementById(warningId);
   
   // Check if the selected GPU type is unavailable
-  var isUnavailable = unavailableMap.hasOwnProperty(selectedGpuType) && selectedGpuType !== 'any' && selectedGpuType !== '';
+  var isUnavailable = unavailableMap.hasOwnProperty(selectedGpuType) && selectedGpuType !== 'none' && selectedGpuType !== '';
   
   try {
     console.log('[gpu-warning] update:', {
@@ -226,8 +226,13 @@ function updateNumGpusForPartition() {
   var gpuTypeSelect = document.getElementById('batch_connect_session_context_gpu_type');
   var numGpusInput = document.getElementById('batch_connect_session_context_num_gpus');
 
-  if (!partitionSelect || !numGpusInput) {
-    console.warn('[num_gpus] update: missing partition or num_gpus input element');
+  // Most apps have no num_gpus field; return quietly rather than warning on
+  // every partition/gpu_type change. Only a missing partition select is notable.
+  if (!numGpusInput) {
+    return;
+  }
+  if (!partitionSelect) {
+    console.warn('[num_gpus] update: missing partition input element');
     return;
   }
 
@@ -430,8 +435,9 @@ function updateMemoryForPartition() {
     return;
   }
 
-  // Convert MB to GB and round to nearest whole number (no decimals)
-  var maxMemoryGB = Math.round(maxMemoryMB / 1024.0);
+  // Convert MB to GB, flooring so we never advertise more memory than a node
+  // actually has (matches the server-side .floor in resource_discovery.erb).
+  var maxMemoryGB = Math.max(Math.floor(maxMemoryMB / 1024.0), 1);
   
   try {
     console.log('[memory] update: start', {
