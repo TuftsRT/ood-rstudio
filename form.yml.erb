@@ -29,7 +29,12 @@ attributes:
     widget: check_box
     label: "Request priority start"
     cacheable: false
-    help: "Limited to 1 running job at a time. (--qos=interactive)"
+    help: |
+      Submits the job with `--qos=interactive` for higher scheduling priority, so it
+      starts sooner. Intended for short, small sessions: while the box is checked, the
+      resource fields above are automatically capped to the interactive QOS limits and
+      a notice below lists them. Leave this box unchecked if your job needs more time
+      or resources than those limits allow.
     value: "normal"
     checked_value: "interactive"
     unchecked_value: "normal"
