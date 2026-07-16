@@ -1,14 +1,8 @@
 ---
 <%
-# Show only CPU partitions.
 @partition_filter = :cpu
-
-# Evaluate the shared resource_discovery.erb and capture its result. We use result(binding)
-# so methods/variables defined inside become available here. IMPORTANT:
-# cluster: "pax" must appear AFTER this block because result(binding)
-# resets the ERB output buffer, wiping anything output before it.
-_partial_path = '/var/www/ood/apps/sys/ood-resource-discovery/resource_discovery.erb'
-_gpu_result = ERB.new(File.read(_partial_path)).result(binding)
+_partial_path = '/etc/ood/config/apps/dashboard/batch_connect/partials/resource_discovery.erb'
+_resource_result = ERB.new(File.read(_partial_path)).result(binding)
 %>
 
 cluster: "pax"
