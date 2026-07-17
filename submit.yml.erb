@@ -11,9 +11,9 @@ script:
 
   native:
     - "--time=<%= bc_num_hours %>:00:00"
+    - "--cpus-per-task=<%= num_cores %>"
     - "--mem=<%= num_memory %>G"
     - "--nodes=1"
-    - "--ntasks=<%= num_cores %>"
     - "--partition=<%= partition %>"
     <%- if defined?(ta_qos) && ta_qos == "interactive" -%>
     - "--qos=<%= ta_qos %>"
