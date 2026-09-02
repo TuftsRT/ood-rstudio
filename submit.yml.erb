@@ -1,7 +1,7 @@
 ---
 batch_connect:
   template: "basic"
-  set_host: "host=$(hostname -A | awk '{print $1}')"
+  set_host: "host=$(hostname -s)"
   conn_params:
     - csrf_token
     
